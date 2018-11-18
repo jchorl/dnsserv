@@ -145,7 +145,7 @@ func server(cmd *cobra.Command, args []string) {
 	}()
 
 	wdClient := watchdog.Client{"https://watchdog.joshchorlton.com"}
-	ticker := time.NewTicker(5 * time.Minute)
+	ticker := time.NewTicker(time.Hour)
 	go func() {
 		for {
 			select {
