@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/jchorl/watchdog"
 	"github.com/spf13/cobra"
 
 	"github.com/jchorl/dnsserv/common"
@@ -64,6 +65,9 @@ func client(cmd *cobra.Command, args []string) {
 
 		log.Fatalf("Body: %s\n", body)
 	}
+
+	wdClient := watchdog.Client{"https://watchdog.joshchorlton.com"}
+	wdClient.Ping("dnsserv-pi", watchdog.Watch_DAILY)
 
 	log.Println("Updated successfully")
 }
