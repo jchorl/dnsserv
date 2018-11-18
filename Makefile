@@ -5,6 +5,16 @@ build:
 		golang:1.11.2 \
 		go build -o dnsserv main.go
 
+build-pi:
+	docker container run --rm -it \
+		-v $(PWD):/dnsserv \
+		-w /dnsserv \
+		-e GOOS=linux \
+		-e GOARCH=arm \
+		-e GOARM=5 \
+		golang:1.11.2 \
+		go build -o dnsserv main.go
+
 serve:
 	sudo ./dnsserv serve \
 		--ca-path $(PWD)/certs/root.pem \
@@ -43,3 +53,9 @@ test-client:
 deploy: build
 	scp $(PWD)/dnsserv $(PWD)/Makefile dnsserv:dnsserv/
 	scp $(PWD)/certs/root.pem $(PWD)/certs/leaf.key $(PWD)/certs/leaf.pem dnsserv:dnsserv/certs/
+
+deploy-pi: build-pi
+	scp $(PWD)/dnsserv $(PWD)/Makefile nas:dnsserv/
+	scp $(PWD)/certs/root.pem $(PWD)/certs/client.key $(PWD)/certs/client.pem nas:dnsserv/certs/
+	scp -r $(PWD)/scripts nas:dnsserv/
+	echo "now ssh nas and /home/j/dnsserv/scripts/install.sh"
