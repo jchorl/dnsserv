@@ -1,6 +1,7 @@
 module github.com/jchorl/dnsserv
 
 require (
+	github.com/jchorl/watchdog v0.0.0-20181118061339-55ed4325059c
 	github.com/miekg/dns v1.0.15
 	github.com/mitchellh/go-homedir v1.0.0 // indirect
 	github.com/spf13/cobra v0.0.3

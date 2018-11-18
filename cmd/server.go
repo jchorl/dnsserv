@@ -9,7 +9,9 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
+	"github.com/jchorl/watchdog"
 	"github.com/miekg/dns"
 	"github.com/spf13/cobra"
 
@@ -115,13 +117,13 @@ func server(cmd *cobra.Command, args []string) {
 	dnsServer.Handler = &dnsHandler{}
 	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		for {
 			log.Printf("Serving DNS server on %d\n", dnsPort)
 			if err := dnsServer.ListenAndServe(); err != nil {
 				log.Printf("DNS server failed %s\n", err.Error())
 			}
 		}
-		wg.Done()
 	}()
 
 	tlsConfig := common.LoadTLSConfigOrPanic(caPath, certPath, keyPath)
@@ -133,13 +135,24 @@ func server(cmd *cobra.Command, args []string) {
 
 	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		for {
 			log.Printf("Serving HTTPS server on %d\n", httpsPort)
 			if err := updateServer.ListenAndServeTLS(certPath, keyPath); err != nil {
 				log.Printf("HTTP server failed %s\n", err.Error())
 			}
 		}
-		wg.Done()
+	}()
+
+	wdClient := watchdog.Client{"https://watchdog.joshchorlton.com"}
+	ticker := time.NewTicker(5 * time.Minute)
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				wdClient.Ping("dnsserv", watchdog.Watch_DAILY)
+			}
+		}
 	}()
 
 	wg.Wait()
