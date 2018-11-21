@@ -7,7 +7,6 @@ import (
 	"net"
 	"net/http"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -78,8 +77,8 @@ type updateHandler struct{}
 
 func (*updateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ipAddrStr := r.RemoteAddr
-	if idx := strings.LastIndex(ipAddrStr, ":"); idx != -1 {
-		ipAddrStr = ipAddrStr[:idx]
+	if host, _, err := net.SplitHostPort(ipAddrStr); err == nil {
+		ipAddrStr = host
 	}
 
 	// validate that the ip can be parsed correctly
