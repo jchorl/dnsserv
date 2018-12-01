@@ -1,3 +1,4 @@
+#!/bin/sh
 /home/j/dnsserv/dnsserv update \
   --ca-path /home/j/dnsserv/certs/root.pem \
   --cert-path /home/j/dnsserv/certs/client.pem \
