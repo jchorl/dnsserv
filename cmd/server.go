@@ -48,8 +48,14 @@ var mapLock = sync.RWMutex{}
 type dnsHandler struct{}
 
 func (*dnsHandler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
+	if len(r.Question) == 0 {
+		log.Printf("Got request without questions: %+v", *r)
+		return
+	}
+
 	msg := dns.Msg{}
 	msg.SetReply(r)
+
 	switch r.Question[0].Qtype {
 	case dns.TypeA:
 		msg.Authoritative = true
