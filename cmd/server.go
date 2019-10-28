@@ -2,14 +2,15 @@ package cmd
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"strconv"
 	"sync"
 	"time"
 
+	log "github.com/golang/glog"
 	"github.com/jchorl/watchdog"
 	"github.com/miekg/dns"
 	"github.com/spf13/cobra"
@@ -26,6 +27,9 @@ var serverCmd = &cobra.Command{
 	Short: "Start the DNS server",
 	Long:  `Starts the DNS server. The server listens for DNS requests (on port 53 by default) and also starts an HTTPS server (on port 643 by default) to get updates.`,
 	Run:   server,
+	FParseErrWhitelist: cobra.FParseErrWhitelist{
+		UnknownFlags: true,
+	},
 }
 
 var (
@@ -49,7 +53,7 @@ type dnsHandler struct{}
 
 func (*dnsHandler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 	if len(r.Question) == 0 {
-		log.Printf("Got request without questions: %+v", *r)
+		log.Errorf("Got request without questions: %+v", *r)
 		return
 	}
 
@@ -74,7 +78,7 @@ func (*dnsHandler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 			})
 		}
 	default:
-		log.Printf("Unknown question type: %d\n", r.Question[0].Qtype)
+		log.Infof("Unknown question type: %d\n", r.Question[0].Qtype)
 	}
 	w.WriteMsg(&msg)
 }
@@ -92,7 +96,7 @@ func (*updateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if ipAddr == nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Unable to get client ip address. Found remote addr: %s", ipAddr)
-		log.Printf("Unable to get client ip address. Found remote addr: %s", ipAddr)
+		log.Errorf("Unable to get client ip address. Found remote addr: %s", ipAddr)
 		return
 	}
 
@@ -102,7 +106,7 @@ func (*updateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(w, "Unable to unmarshal body: %s", err)
-		log.Printf("Unable to unmarshal body: %s", err)
+		log.Errorf("Unable to unmarshal body: %s", err)
 		return
 	}
 
@@ -116,6 +120,9 @@ func (*updateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func server(cmd *cobra.Command, args []string) {
+	// TODO figure out why --logtostderr isnt passed through to glog
+	flag.Parse()
+
 	wg := sync.WaitGroup{}
 
 	dnsServer := &dns.Server{Addr: ":" + strconv.Itoa(dnsPort), Net: "udp"}
@@ -124,9 +131,9 @@ func server(cmd *cobra.Command, args []string) {
 	go func() {
 		defer wg.Done()
 		for {
-			log.Printf("Serving DNS server on %d\n", dnsPort)
+			log.Infof("Serving DNS server on %d\n", dnsPort)
 			if err := dnsServer.ListenAndServe(); err != nil {
-				log.Printf("DNS server failed %s\n", err.Error())
+				log.Errorf("DNS server failed %s\n", err.Error())
 			}
 		}
 	}()
@@ -142,9 +149,9 @@ func server(cmd *cobra.Command, args []string) {
 	go func() {
 		defer wg.Done()
 		for {
-			log.Printf("Serving HTTPS server on %d\n", httpsPort)
+			log.Infof("Serving HTTPS server on %d\n", httpsPort)
 			if err := updateServer.ListenAndServeTLS(certPath, keyPath); err != nil {
-				log.Printf("HTTP server failed %s\n", err.Error())
+				log.Errorf("HTTP server failed %s\n", err.Error())
 			}
 		}
 	}()

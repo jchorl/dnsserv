@@ -2,7 +2,7 @@ build:
 	docker container run --rm -it \
 		-v $(PWD):/dnsserv \
 		-w /dnsserv \
-		golang:1.11.2 \
+		golang:1.13 \
 		go build -o dnsserv main.go
 
 build-pi:
@@ -12,7 +12,7 @@ build-pi:
 		-e GOOS=linux \
 		-e GOARCH=arm \
 		-e GOARM=5 \
-		golang:1.11.2 \
+		golang:1.13 \
 		go build -o dnsserv main.go
 
 serve:
@@ -30,7 +30,7 @@ generate-certs: tmp
 	docker container run --rm -it \
 		-v $(PWD)/tmp:/certs \
 		-w /certs \
-		golang:1.11.2 \
+		golang:1.13 \
 		sh -c "go get github.com/Shyp/generate-tls-cert && generate-tls-cert --host localhost"
 
 test-serve: generate-certs
@@ -53,6 +53,7 @@ test-client:
 deploy: build
 	scp $(PWD)/dnsserv $(PWD)/Makefile dnsserv:dnsserv/
 	scp $(PWD)/certs/root.pem $(PWD)/certs/leaf.key $(PWD)/certs/leaf.pem dnsserv:dnsserv/certs/
+	scp $(PWD)/scripts/dnsserv-server.service dnsserv:dnsserv/scripts/
 
 deploy-pi: build-pi
 	scp $(PWD)/dnsserv $(PWD)/Makefile nas:dnsserv/
