@@ -1,6 +1,6 @@
 #!/bin/sh
 /home/j/dnsserv/dnsserv update \
-  --ca-path /home/j/dnsserv/certs/root.pem \
+  --ca-path /home/j/dnsserv/certs/ca.pem \
   --cert-path /home/j/dnsserv/certs/client.pem \
   --key-path /home/j/dnsserv/certs/client-key.pem \
   --dns-server https://dns.joshchorlton.com \
