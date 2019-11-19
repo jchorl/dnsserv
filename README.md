@@ -43,3 +43,38 @@ make test-serve
 ```bash
 make test-client
 ```
+
+## Generating certs
+```bash
+go get -u github.com/cloudflare/cfssl/cmd/...
+cfssl print-defaults csr > ca-csr.json
+cfssl print-defaults csr > server-csr.json
+cfssl print-defaults csr > client-csr.json
+cfssl print-defaults csr > devserver-csr.json
+cfssl print-defaults config > ca-config.json
+cfssl print-defaults config > server-config.json
+cfssl print-defaults config > client-config.json
+
+# now update the csrs and configs
+
+cfssl gencert -initca ca-csr.json | cfssljson -bare ca
+cfssl gencert  \
+    -ca=ca.pem \
+    -ca-key=ca-key.pem \
+    -config=server-config.json \
+    -hostname=dns.joshchorlton.com \
+    -profile=www \
+    server-csr.json | cfssljson -bare server
+cfssl gencert \
+    -ca=ca.pem \
+    -ca-key=ca-key.pem \
+    -config=server-config.json \
+    -profile=www \
+    devserver-csr.json | cfssljson -bare devserver
+cfssl gencert \
+    -ca=ca.pem \
+    -ca-key=ca-key.pem \
+    -config=client-config.json \
+    -profile=client \
+    client-csr.json | cfssljson -bare client
+```

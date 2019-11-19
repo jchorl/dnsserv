@@ -21,36 +21,11 @@ build-pi:
 
 serve:
 	sudo ./dnsserv serve \
-		--ca-path $(PWD)/certs/root.pem \
-		--cert-path $(PWD)/certs/leaf.pem \
-		--key-path $(PWD)/certs/leaf.key \
+		--ca-path $(PWD)/certs/ca.pem \
+		--cert-path $(PWD)/certs/client.pem \
+		--key-path $(PWD)/certs/client-key.pem \
 		--dns-port 53 \
 		--https-port 443
-
-certs-dir:
-	mkdir -p certs
-
-certs: certs-dir
-	# need GOCACHE env: https://github.com/golang/go/issues/26280#issuecomment-445294378
-	docker container run --rm -it \
-		-u $(UID):$(GID) \
-		-v $(PWD)/certs:/certs \
-		-e GOCACHE=/tmp \
-		-w /certs \
-		golang:$(GOVERSION) \
-		sh -c "rm -rf /certs/* && go get -u github.com/meterup/generate-cert && generate-cert --host dns.joshchorlton.com"
-
-tmp-dir:
-	mkdir -p tmp
-
-dev-certs: tmp-dir
-	docker container run --rm -it \
-		-u $(UID):$(GID) \
-		-v $(PWD)/tmp:/certs \
-		-e GOCACHE=/tmp \
-		-w /certs \
-		golang:$(GOVERSION) \
-		sh -c "rm -rf /certs/* && go get github.com/meterup/generate-cert && generate-cert --host localhost"
 
 test-serve:
 	docker container run --rm -it \
@@ -59,9 +34,9 @@ test-serve:
 		--net=host \
 		golang:$(GOVERSION) \
 		./dnsserv serve \
-			--ca-path /dnsserv/tmp/root.pem \
-			--cert-path /dnsserv/tmp/leaf.pem \
-			--key-path /dnsserv/tmp/leaf.key \
+			--ca-path /dnsserv/certs/ca.pem \
+			--cert-path /dnsserv/certs/devserver.pem \
+			--key-path /dnsserv/certs/devserver-key.pem \
 			--dns-port 2012 \
 			--https-port 3242 \
 			--logtostderr=true
@@ -73,18 +48,18 @@ test-client:
 		--net=host \
 		golang:$(GOVERSION) \
 		./dnsserv update \
-			 --ca-path /dnsserv/tmp/root.pem \
-			 --cert-path /dnsserv/tmp/client.pem \
-			 --key-path /dnsserv/tmp/client.key \
+			 --ca-path /dnsserv/certs/ca.pem \
+			 --cert-path /dnsserv/certs/client.pem \
+			 --key-path /dnsserv/certs/client-key.pem \
 			 --dns-server https://localhost:3242 \
 			 --domain pi.joshchorlton.com
 
 deploy: build
 	scp $(PWD)/dnsserv $(PWD)/Makefile dnsserv:dnsserv/
-	scp $(PWD)/certs/root.pem $(PWD)/certs/leaf.key $(PWD)/certs/leaf.pem dnsserv:dnsserv/certs/
+	scp $(PWD)/certs/ca.pem $(PWD)/certs/server-key.pem $(PWD)/certs/server.pem dnsserv:dnsserv/certs/
 	scp $(PWD)/scripts/dnsserv-server.service dnsserv:dnsserv/scripts/
 
 deploy-pi: build-pi
 	scp $(PWD)/dnsserv $(PWD)/Makefile nas:dnsserv/
-	scp $(PWD)/certs/root.pem $(PWD)/certs/client.key $(PWD)/certs/client.pem nas:dnsserv/certs/
+	scp $(PWD)/certs/ca.pem $(PWD)/certs/client-key.pem $(PWD)/certs/client.pem nas:dnsserv/certs/
 	scp -r $(PWD)/scripts nas:dnsserv/

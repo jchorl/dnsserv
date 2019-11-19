@@ -33,6 +33,7 @@ func LoadTLSConfigOrPanic(caPath, certPath, keyPath string) *tls.Config {
 		Certificates: []tls.Certificate{cert},
 		RootCAs:      roots,
 		ClientCAs:    roots,
+		ClientAuth:   tls.RequireAndVerifyClientCert,
 	}
 	tlsConfig.BuildNameToCertificate()
 

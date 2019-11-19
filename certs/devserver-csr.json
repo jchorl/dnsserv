@@ -1,0 +1,18 @@
+{
+    "CN": "Josh Chorlton",
+    "hosts": [
+        "localhost"
+    ],
+    "key": {
+        "algo": "ecdsa",
+        "size": 256
+    },
+    "names": [
+        {
+            "C": "US",
+            "ST": "CA",
+            "L": "San Francisco"
+        }
+    ]
+}
+

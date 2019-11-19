@@ -8,7 +8,7 @@ Type=simple
 Restart=always
 RestartSec=5
 User=root
-ExecStart=/home/jchorlton/dnsserv/dnsserv serve --ca-path /home/jchorlton/dnsserv/certs/root.pem --cert-path /home/jchorlton/dnsserv/certs/leaf.pem --key-path /home/jchorlton/dnsserv/certs/leaf.key --dns-port 53 --https-port 443
+ExecStart=/home/jchorlton/dnsserv/dnsserv serve --ca-path /home/jchorlton/dnsserv/certs/ca.pem --cert-path /home/jchorlton/dnsserv/certs/server.pem --key-path /home/jchorlton/dnsserv/certs/server-key.pem --dns-port 53 --https-port 443
 
 [Install]
 WantedBy=multi-user.target
