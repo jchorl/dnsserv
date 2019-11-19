@@ -1,11 +1,12 @@
 UID=$(shell id -u)
 GID=$(shell id -g)
+GOVERSION=1.13
 
 build:
 	docker container run --rm -it \
 		-v $(PWD):/dnsserv \
 		-w /dnsserv \
-		golang:1.13 \
+		golang:$(GOVERSION) \
 		go build -o dnsserv main.go
 
 build-pi:
@@ -15,7 +16,7 @@ build-pi:
 		-e GOOS=linux \
 		-e GOARCH=arm \
 		-e GOARM=5 \
-		golang:1.13 \
+		golang:$(GOVERSION) \
 		go build -o dnsserv main.go
 
 serve:
@@ -36,35 +37,47 @@ certs: certs-dir
 		-v $(PWD)/certs:/certs \
 		-e GOCACHE=/tmp \
 		-w /certs \
-		golang:1.13 \
-		sh -c "rm -rf certs/* && go get -u github.com/meterup/generate-cert && generate-cert --host dns.joshchorlton.com"
+		golang:$(GOVERSION) \
+		sh -c "rm -rf /certs/* && go get -u github.com/meterup/generate-cert && generate-cert --host dns.joshchorlton.com"
 
 tmp-dir:
 	mkdir -p tmp
 
-generate-dev-certs: tmp
+dev-certs: tmp-dir
 	docker container run --rm -it \
+		-u $(UID):$(GID) \
 		-v $(PWD)/tmp:/certs \
+		-e GOCACHE=/tmp \
 		-w /certs \
-		golang:1.13 \
-		sh -c "go get github.com/meterup/generate-cert && generate-cert --host localhost"
+		golang:$(GOVERSION) \
+		sh -c "rm -rf /certs/* && go get github.com/meterup/generate-cert && generate-cert --host localhost"
 
-test-serve: generate-certs
-	./dnsserv serve \
-		--ca-path $(PWD)/tmp/root.pem \
-		--cert-path $(PWD)/tmp/leaf.pem \
-		--key-path $(PWD)/tmp/leaf.key \
-		--dns-port 2012 \
-		--https-port 3242
+test-serve:
+	docker container run --rm -it \
+		-v $(PWD):/dnsserv \
+		-w /dnsserv \
+		--net=host \
+		golang:$(GOVERSION) \
+		./dnsserv serve \
+			--ca-path /dnsserv/tmp/root.pem \
+			--cert-path /dnsserv/tmp/leaf.pem \
+			--key-path /dnsserv/tmp/leaf.key \
+			--dns-port 2012 \
+			--https-port 3242 \
+			--logtostderr=true
 
 test-client:
-	 ./dnsserv update \
-		 --ca-path $(PWD)/tmp/root.pem \
-		 --cert-path $(PWD)/tmp/client.pem \
-		 --key-path $(PWD)/tmp/client.key \
-		 --dns-server https://localhost:3242 \
-		 --domain pi.joshchorlton.com \
-		 --port 123
+	docker container run --rm -it \
+		-v $(PWD):/dnsserv \
+		-w /dnsserv \
+		--net=host \
+		golang:$(GOVERSION) \
+		./dnsserv update \
+			 --ca-path /dnsserv/tmp/root.pem \
+			 --cert-path /dnsserv/tmp/client.pem \
+			 --key-path /dnsserv/tmp/client.key \
+			 --dns-server https://localhost:3242 \
+			 --domain pi.joshchorlton.com
 
 deploy: build
 	scp $(PWD)/dnsserv $(PWD)/Makefile dnsserv:dnsserv/

@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"net"
 	"net/http"
@@ -78,7 +77,7 @@ func (*dnsHandler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 			})
 		}
 	default:
-		log.Infof("Unknown question type: %d\n", r.Question[0].Qtype)
+		log.Infof("Unknown question type: %d", r.Question[0].Qtype)
 	}
 	w.WriteMsg(&msg)
 }
@@ -120,8 +119,7 @@ func (*updateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func server(cmd *cobra.Command, args []string) {
-	// TODO figure out why --logtostderr isnt passed through to glog
-	flag.Parse()
+	log.Infof("Starting up")
 
 	wg := sync.WaitGroup{}
 
@@ -131,9 +129,9 @@ func server(cmd *cobra.Command, args []string) {
 	go func() {
 		defer wg.Done()
 		for {
-			log.Infof("Serving DNS server on %d\n", dnsPort)
+			log.Infof("Serving DNS server on %d", dnsPort)
 			if err := dnsServer.ListenAndServe(); err != nil {
-				log.Errorf("DNS server failed %s\n", err.Error())
+				log.Errorf("DNS server failed %s", err.Error())
 			}
 		}
 	}()
@@ -149,9 +147,9 @@ func server(cmd *cobra.Command, args []string) {
 	go func() {
 		defer wg.Done()
 		for {
-			log.Infof("Serving HTTPS server on %d\n", httpsPort)
+			log.Infof("Serving HTTPS server on %d", httpsPort)
 			if err := updateServer.ListenAndServeTLS(certPath, keyPath); err != nil {
-				log.Errorf("HTTP server failed %s\n", err.Error())
+				log.Errorf("HTTP server failed %s", err.Error())
 			}
 		}
 	}()
